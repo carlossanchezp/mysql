@@ -1,0 +1,112 @@
+###############################################################
+#
+# autor: STR Sistemas - Octubre 2012
+# 
+# este fichero contiene un listado/explicacion de comandos que se deben seguir leyendo los comentarios
+# y ejecutando en el host y consola indicados
+#
+###############################################################
+
+# mirar las IPs de host1 y host2 para los siguientes comandos
+
+# host1 - conexion 1
+
+# añadir a /etc/mysql/my.cnf en la sección mysqld las directivas
+# server-id = 1
+# log_bin = /var/log/mysql/mysql-bin.log
+/etc/init.d/mysql5.5 restart
+# comprobar que se están creando los logs binarios
+ls -lahrt /var/log/mysql
+# crear los usuarios de replicacion
+mysql -u root -p 
+mysql> GRANT REPLICATION SLAVE ON *.* TO 'repuser'@'<ip_host1>' IDENTIFIED BY 'strrep';
+mysql> GRANT REPLICATION SLAVE ON *.* TO 'repuser'@'<ip_host2>' IDENTIFIED BY 'strrep';
+mysql> FLUSH PRIVILEGES;
+# bloquear las bases de datos para poder generar un dump integro de la base de daos
+mysql> FLUSH TABLES WITH READ LOCK;
+mysql> SHOW MASTER STATUS;
+# copiar la salida para saber el fichero de log actual y la posición del mismo
+
+
+# host1 - conexion 2
+# sacar dump de la base de datos
+mysqldump -u root -p --default-character-set=latin1 --hex-blob --single-transaction -c -f --all-databases > dump_mysql_host1.sql
+scp dump_mysql_host1.sql root@<ip_host2>:/root/
+
+# host1 - conexion 1
+# desbloquear las bases de datos y liberar el MySQL de host1
+mysql> UNLOCK TABLES;
+mysql> exit;
+
+
+# host2 - conexion 1
+# configurar MYSQL en host2 siguiendo los pasos del fichero comandos_host2.sh (igual que comandos_host1.sh excepto la carga de la BD de pruebas)
+# añadir a /etc/mysql/my.cnf en la sección mysqld las directivas
+# server-id = 2
+# cargar la base de datos de host1
+mysql -u root -p --default-character-set=latin1 < /root/dump_mysql_host1.sql
+/etc/init.d/mysql5.5 restart
+# establecer la replicacion con los datos obtenidos en el SHOW MASTER STATUS de la conexion 1 del host1
+mysql -u root -p
+mysql> CHANGE MASTER TO MASTER_HOST='<ip_host1>', MASTER_USER='repuser', MASTER_PASSWORD='strrep', MASTER_LOG_FILE='<bin_log_host1>', MASTER_LOG_POS=<bin_position_host1>;
+mysql> START SLAVE;
+mysql> SHOW SLAVE STATUS\G
+mysql> exit;
+
+
+# ALGUNAS PRUEBAS
+# host1 - conexion 1
+# ver las bases de datos iniciales de host1
+mysql -u root -p
+mysql> SHOW DATABASES;
+
+
+# host2 - conexion 1
+# ver las bases de datos iniciales de host2
+mysql -u root -p
+mysql> SHOW DATABASES;
+
+
+# host1 - conexion 1
+# creamos una nueva base de datos en host1 y vemos las bases de datos de host1 nuevamente
+mysql> CREATE DATABASE pruebas2;
+mysql> SHOW DATABASES;
+
+
+# host2 - conexion 1
+# comprobamos que la base de datos se ha creado automaticamente en el MySQL de host2
+mysql> SHOW DATABASES;
+
+
+# host1 - conexion 1
+# ver los registros iniciales de la tabla usuarios de la base datos pruebas de host1
+mysql> USE pruebas;
+mysql> SELECT * FROM usuarios;
+
+
+# host2 - conexion 1
+# ver los registros iniciales de la tabla usuarios de la base datos pruebas de host2
+mysql> USE pruebas;
+mysql> SELECT * FROM usuarios;
+
+
+# host1 - conexion 1
+# insertamos un nuevo registro en la tabla usuarios de la base de datos pruebas de host1
+mysql> INSERT INTO usuarios(Nick) VALUES ('woody');
+mysql> SELECT * FROM usuarios;
+
+
+# host2 - conexion 1
+# comprobamos que el registro se crea automaticamente en el host2
+mysql> SELECT * FROM usuarios;
+
+
+# host1 - conexion 1
+# eliminamos un registro de la tabla usuarios de la base de datos pruebas en host1
+mysql> DELETE FROM usuarios WHERE IDUsuario=1;
+mysql> SELECT * FROM usuarios;
+
+
+# host2 - conexion 1
+# comprobamos que el registro se ha eliminado en host2
+mysql> SELECT * FROM usuarios;

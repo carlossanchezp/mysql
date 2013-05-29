@@ -1,0 +1,101 @@
+###############################################################
+#
+# autor: STR Sistemas - Octubre 2012
+# 
+# este fichero contiene un listado/explicacion de comandos que se deben seguir leyendo los comentarios
+# y ejecutando en el host y consola indicados
+#
+###############################################################
+
+# mirar las IPs de host1 y host2 para los siguientes comandos
+
+# host2 - conexion 1
+
+# añadir a /etc/mysql/my.cnf en la sección mysqld las directivas
+# log_bin = /var/log/mysql/mysql-bin.log
+/etc/init.d/mysql5.5 restart
+# comprobar que se están creando los logs binarios
+ls -lahrt /var/log/mysql
+# como el servidor solo ha funcionado como slave de momento, no tiene modificaciones propios. Obtenemos los datos del master de host2
+mysql -u root -p 
+mysql> SHOW MASTER STATUS;
+
+
+# host1 - conexion 1
+# establecer la replicación en host1
+mysql -u root -p 
+mysql> CHANGE MASTER TO MASTER_HOST='<ip_host2>', MASTER_USER='repuser', MASTER_PASSWORD='strrep', MASTER_LOG_FILE='<bin_log_host2>', MASTER_LOG_POS=<bin_position_host2>;
+mysql> START SLAVE;
+mysql> SHOW SLAVE STATUS\G
+mysql> exit;
+
+
+# ALGUNAS PRUEBAS
+# host2 - conexion 1
+# ver las bases de datos iniciales de host2
+mysql -u root -p
+mysql> SHOW DATABASES;
+
+
+# host1 - conexion 1
+# ver las bases de datos iniciales de host1
+mysql -u root -p
+mysql> SHOW DATABASES;
+
+
+# host2 - conexion 1
+# creamos una nueva base de datos en host2 y vemos las bases de datos de host2 nuevamente
+mysql> CREATE DATABASE pruebas3;
+mysql> SHOW DATABASES;
+
+
+# host1 - conexion 1
+# comprobamos que la base de datos se ha creado automaticamente en el MySQL de host1
+mysql> SHOW DATABASES;
+# eliminamos la base de datos pruebas3 se ha creado automaticamente en el MySQL de host1
+mysql> DROP DATABASE pruebas3;
+mysql> SHOW DATABASES;
+
+
+# host2 - conexion 1
+# comprobamos que la base de datos pruebas3 se ha eliminado auomaticamente en host2
+mysql> SHOW DATABASES;
+# ver los registros iniciales de la tabla usuarios de la base datos pruebas de host2
+mysql> USE pruebas;
+mysql> SELECT * FROM usuarios;
+
+
+# host1 - conexion 1
+# ver los registros iniciales de la tabla usuarios de la base datos pruebas de host1
+mysql> USE pruebas;
+mysql> SELECT * FROM usuarios;
+
+
+# host2 - conexion 1
+# insertamos un nuevo registro en la tabla usuarios de la base de datos pruebas de host2
+mysql> INSERT INTO usuarios(Nick) VALUES ('superman');
+mysql> SELECT * FROM usuarios;
+
+
+# host1 - conexion 1
+# comprobamos que el registro se crea automaticamente en el host1
+mysql> SELECT * FROM usuarios;
+# insertamos un nuevo registro en la tabla usuarios de la base de datos pruebas de host1
+mysql> INSERT INTO usuarios(Nick) VALUES ('superlopez');
+mysql> SELECT * FROM usuarios;
+# eliminamos un registro de la tabla usuarios de la base de datos pruebas de host1
+mysql> DELETE FROM usuarios WHERE IDUsuario=2;
+mysql> SELECT * FROM usuarios;
+
+
+# host2 - conexion 1
+# comprobamos que el registro se ha eliminado en host2
+mysql> SELECT * FROM usuarios;
+# eliminamos un registro de la tabla usuarios de la base de datos pruebas de host2
+mysql> DELETE FROM usuarios WHERE Nick='superman';
+mysql> SELECT * FROM usuarios;
+
+
+# host1 - conexion 1
+# comprobamos que el registro se ha eliminado en host1
+mysql> SELECT * FROM usuarios;

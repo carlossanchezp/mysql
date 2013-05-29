@@ -1,0 +1,23 @@
+###############################################################
+#
+# autor: STR Sistemas - Octubre 2012
+# 
+# este fichero contiene un listado/explicacion de comandos que se deben seguir leyendo los comentarios
+# y ejecutando en el host y consola indicados
+#
+###############################################################
+
+# mirar las IPs de host1 y host2 para los siguientes comandos
+
+# host1 - conexion 1
+# añadir a /etc/mysql/my.cnf en la sección mysqld las directivas
+# auto_increment_increment = 2
+# auto_increment_offset = 1
+/etc/init.d/mysql5.5 restart
+
+
+# host2 - conexion 1
+# añadir a /etc/mysql/my.cnf en la sección mysqld las directivas
+# auto_increment_increment = 2
+# auto_increment_offset = 2
+/etc/init.d/mysql5.5 restart
